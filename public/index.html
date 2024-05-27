@@ -35,6 +35,8 @@
   <script>
     const socket = io();
     let userId;
+    let username;
+    let users = {};
 
     document.getElementById('registerButton').addEventListener('click', () => {
       const email = document.getElementById('registerEmail').value;
@@ -65,18 +67,27 @@
       .then(response => response.json())
       .then(data => {
         userId = data.userId;
+        username = data.username;
         document.getElementById('chat').style.display = 'block';
 
         fetch('/users')
         .then(response => response.json())
-        .then(users => {
+        .then(usersData => {
           const receiverSelect = document.getElementById('receiverSelect');
-          users.forEach(user => {
+          usersData.forEach(user => {
+            users[user.id] = user.username;
             const option = document.createElement('option');
             option.value = user.id;
             option.textContent = user.username;
             receiverSelect.appendChild(option);
           });
+
+          // Fetch messages for the first user in the list
+          if (receiverSelect.options.length > 0) {
+            receiverSelect.selectedIndex = 0;
+            const firstReceiverId = receiverSelect.value;
+            fetchMessages(userId, firstReceiverId);
+          }
         });
       })
       .catch(error => console.error('Error:', error));
@@ -115,7 +126,9 @@
     function displayMessage(message) {
       const messagesDiv = document.getElementById('messages');
       const messageElement = document.createElement('div');
-      messageElement.textContent = `From ${message.senderId} to ${message.receiverId}: ${message.content}`;
+      const senderName = message.senderId === userId ? 'you' : (users[message.senderId] || 'Unknown');
+      const receiverName = users[message.receiverId] || 'Unknown';
+      messageElement.textContent = `${senderName}: ${message.content}`;
       messagesDiv.appendChild(messageElement);
     }
   </script>
