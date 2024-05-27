@@ -81,6 +81,26 @@ io.on('connection', (socket) => {
   });
 });
 
+// Get messages between two users
+app.get('/messages/:senderId/:receiverId', async (req, res) => {
+    const { senderId, receiverId } = req.params;
+  
+    const messages = await prisma.message.findMany({
+      where: {
+        OR: [
+          { senderId: parseInt(senderId), receiverId: parseInt(receiverId) },
+          { senderId: parseInt(receiverId), receiverId: parseInt(senderId) },
+        ],
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  
+    res.json(messages);
+  });
+  
+
 server.listen(3000, () => {
   console.log('listening on *:3000');
 });

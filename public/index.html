@@ -90,16 +90,34 @@
     });
 
     socket.on('message', (message) => {
-      const messagesDiv = document.getElementById('messages');
-      const messageElement = document.createElement('div');
-      messageElement.textContent = `From ${message.senderId} to ${message.receiverId}: ${message.content}`;
-      messagesDiv.appendChild(messageElement);
+      displayMessage(message);
     });
 
     document.getElementById('receiverSelect').addEventListener('change', () => {
       const receiverId = document.getElementById('receiverSelect').value;
       socket.emit('joinRoom', { senderId: userId, receiverId });
+      fetchMessages(userId, receiverId);
     });
+
+    function fetchMessages(senderId, receiverId) {
+      fetch(`/messages/${senderId}/${receiverId}`)
+      .then(response => response.json())
+      .then(messages => {
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = ''; // Clear current messages
+        messages.forEach(message => {
+          displayMessage(message);
+        });
+      })
+      .catch(error => console.error('Error:', error));
+    }
+
+    function displayMessage(message) {
+      const messagesDiv = document.getElementById('messages');
+      const messageElement = document.createElement('div');
+      messageElement.textContent = `From ${message.senderId} to ${message.receiverId}: ${message.content}`;
+      messagesDiv.appendChild(messageElement);
+    }
   </script>
 </body>
 </html>
