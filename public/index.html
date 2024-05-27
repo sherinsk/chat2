@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat App</title>
+</head>
+<body>
+  <div>
+    <h2>Register</h2>
+    <input id="registerEmail" type="email" placeholder="Email">
+    <input id="registerPassword" type="password" placeholder="Password">
+    <input id="registerUsername" type="text" placeholder="Username">
+    <button id="registerButton">Register</button>
+  </div>
+
+  <div>
+    <h2>Login</h2>
+    <input id="loginEmail" type="email" placeholder="Email">
+    <input id="loginPassword" type="password" placeholder="Password">
+    <button id="loginButton">Login</button>
+  </div>
+
+  <div id="chat" style="display: none;">
+    <h2>Chat</h2>
+    <div>
+      <select id="receiverSelect"></select>
+    </div>
+    <div id="messages"></div>
+    <input id="messageInput" type="text" placeholder="Type a message">
+    <button id="sendButton">Send</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let userId;
+
+    document.getElementById('registerButton').addEventListener('click', () => {
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+      const username = document.getElementById('registerUsername').value;
+
+      fetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, username }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert('Registered successfully');
+      })
+      .catch(error => console.error('Error:', error));
+    });
+
+    document.getElementById('loginButton').addEventListener('click', () => {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        userId = data.userId;
+        document.getElementById('chat').style.display = 'block';
+
+        fetch('/users')
+        .then(response => response.json())
+        .then(users => {
+          const receiverSelect = document.getElementById('receiverSelect');
+          users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.username;
+            receiverSelect.appendChild(option);
+          });
+        });
+      })
+      .catch(error => console.error('Error:', error));
+    });
+
+    document.getElementById('sendButton').addEventListener('click', () => {
+      const receiverId = document.getElementById('receiverSelect').value;
+      const content = document.getElementById('messageInput').value;
+      socket.emit('message', { senderId: userId, receiverId, content });
+      document.getElementById('messageInput').value = '';
+    });
+
+    socket.on('message', (message) => {
+      const messagesDiv = document.getElementById('messages');
+      const messageElement = document.createElement('div');
+      messageElement.textContent = `From ${message.senderId} to ${message.receiverId}: ${message.content}`;
+      messagesDiv.appendChild(messageElement);
+    });
+  </script>
+</body>
+</html>
