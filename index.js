@@ -54,6 +54,11 @@ app.get('/users/:id', async (req, res) => {
 io.on('connection', (socket) => {
   console.log('a user connected');
 
+  socket.on('joinRoom', ({ senderId, receiverId }) => {
+    const room = [senderId, receiverId].sort().join('-');
+    socket.join(room);
+  });
+
   socket.on('message', async ({ senderId, receiverId, content }) => {
     try {
       const message = await prisma.message.create({
@@ -64,7 +69,8 @@ io.on('connection', (socket) => {
         },
       });
 
-      io.emit('message', message);
+      const room = [senderId, receiverId].sort().join('-');
+      io.to(room).emit('message', message);
     } catch (err) {
       console.error('Error saving message:', err);
     }

@@ -95,6 +95,11 @@
       messageElement.textContent = `From ${message.senderId} to ${message.receiverId}: ${message.content}`;
       messagesDiv.appendChild(messageElement);
     });
+
+    document.getElementById('receiverSelect').addEventListener('change', () => {
+      const receiverId = document.getElementById('receiverSelect').value;
+      socket.emit('joinRoom', { senderId: userId, receiverId });
+    });
   </script>
 </body>
 </html>
