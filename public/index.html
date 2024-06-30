@@ -6,22 +6,22 @@
   <title>Chat App</title>
 </head>
 <body>
-  <div>
+  <div id="auth">
     <h2>Register</h2>
     <input id="registerEmail" type="email" placeholder="Email">
     <input id="registerPassword" type="password" placeholder="Password">
     <input id="registerUsername" type="text" placeholder="Username">
     <button id="registerButton">Register</button>
-  </div>
 
-  <div>
     <h2>Login</h2>
     <input id="loginEmail" type="email" placeholder="Email">
     <input id="loginPassword" type="password" placeholder="Password">
     <button id="loginButton">Login</button>
-    <div id="receiverDiv" style="display: none;">
-      <select id="receiverSelect"></select>
-    </div>
+  </div>
+
+  <div id="receiverDiv" style="display: none;">
+    <select id="receiverSelect"></select>
+    <button id="logoutButton">Logout</button>
   </div>
 
   <div id="chat" style="display: none;">
@@ -37,6 +37,11 @@
     let userId;
     let username;
     let users = {};
+    let token = localStorage.getItem('token');
+
+    if (token) {
+      initializeUser();
+    }
 
     document.getElementById('registerButton').addEventListener('click', () => {
       const email = document.getElementById('registerEmail').value;
@@ -66,47 +71,22 @@
       })
       .then(response => response.json())
       .then(data => {
-        userId = data.userId;
-        username = data.username;
-        document.getElementById('receiverDiv').style.display = 'block';
-
-        const receiverSelect = document.getElementById('receiverSelect');
-        receiverSelect.innerHTML = ''; // Clear existing options
-
-        // Add the logged-in user as an option and select them by default
-        const option = document.createElement('option');
-        option.value = userId;
-        option.textContent = username;
-        receiverSelect.appendChild(option);
-
-        fetch('/users')
-        .then(response => response.json())
-        .then(usersData => {
-          usersData.forEach(user => {
-            if (user.id !== userId) { // Exclude the logged-in user from the list
-              users[user.id] = user.username;
-              const option = document.createElement('option');
-              option.value = user.id;
-              option.textContent = user.username;
-              receiverSelect.appendChild(option);
-            }
-          });
-
-          // Automatically select the logged-in user and fetch messages
-          receiverSelect.selectedIndex = 0;
-          const firstReceiverId = receiverSelect.value;
-          socket.emit('joinRoom', { senderId: userId, receiverId: firstReceiverId });
-          fetchMessages(userId, firstReceiverId);
-          document.getElementById('chat').style.display = 'block';
-        });
+        token = data.token;
+        localStorage.setItem('token', token);
+        initializeUser();
       })
       .catch(error => console.error('Error:', error));
+    });
+
+    document.getElementById('logoutButton').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      location.reload();
     });
 
     document.getElementById('sendButton').addEventListener('click', () => {
       const receiverId = document.getElementById('receiverSelect').value;
       const content = document.getElementById('messageInput').value;
-      socket.emit('message', { senderId: userId, receiverId, content });
+      socket.emit('message', { token, receiverId, content });
       document.getElementById('messageInput').value = '';
     });
 
@@ -116,12 +96,47 @@
 
     document.getElementById('receiverSelect').addEventListener('change', () => {
       const receiverId = document.getElementById('receiverSelect').value;
-      socket.emit('joinRoom', { senderId: userId, receiverId });
+      socket.emit('joinRoom', { token, receiverId });
       fetchMessages(userId, receiverId);
     });
 
+    function initializeUser() {
+      document.getElementById('auth').style.display = 'none';
+      document.getElementById('receiverDiv').style.display = 'block';
+      const receiverSelect = document.getElementById('receiverSelect');
+      receiverSelect.innerHTML = ''; // Clear existing options
+
+      const user = parseJwt(token);
+      userId = user.userId;
+
+      fetch('/users', {
+        headers: { 'Authorization': token }
+      })
+      .then(response => response.json())
+      .then(usersData => {
+        usersData.forEach(user => {
+          users[user.id] = user.username;
+          const option = document.createElement('option');
+          option.value = user.id;
+          option.textContent = user.username;
+          receiverSelect.appendChild(option);
+        });
+
+        // Automatically select the first user and fetch messages
+        if (receiverSelect.options.length > 0) {
+          receiverSelect.selectedIndex = 0;
+          const firstReceiverId = receiverSelect.value;
+          socket.emit('joinRoom', { token, receiverId: firstReceiverId });
+          fetchMessages(userId, firstReceiverId);
+          document.getElementById('chat').style.display = 'block';
+        }
+      });
+    }
+
     function fetchMessages(senderId, receiverId) {
-      fetch(`/messages/${senderId}/${receiverId}`)
+      fetch(`/messages/${senderId}/${receiverId}`, {
+        headers: { 'Authorization': token }
+      })
       .then(response => response.json())
       .then(messages => {
         const messagesDiv = document.getElementById('messages');
@@ -140,6 +155,16 @@
       const receiverName = users[message.receiverId] || 'Unknown';
       messageElement.textContent = `${senderName}: ${message.content}`;
       messagesDiv.appendChild(messageElement);
+    }
+
+    function parseJwt(token) {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+
+      return JSON.parse(jsonPayload);
     }
   </script>
 </body>
