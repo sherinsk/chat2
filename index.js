@@ -22,6 +22,7 @@ app.post('/register', async (req, res) => {
     });
     res.json(user);
   } catch (error) {
+    console.log(error)
     res.status(400).send('User already exists');
   }
 });

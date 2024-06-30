@@ -19,13 +19,13 @@
     <input id="loginEmail" type="email" placeholder="Email">
     <input id="loginPassword" type="password" placeholder="Password">
     <button id="loginButton">Login</button>
+    <div id="receiverDiv" style="display: none;">
+      <select id="receiverSelect"></select>
+    </div>
   </div>
 
   <div id="chat" style="display: none;">
     <h2>Chat</h2>
-    <div>
-      <select id="receiverSelect"></select>
-    </div>
     <div id="messages"></div>
     <input id="messageInput" type="text" placeholder="Type a message">
     <button id="sendButton">Send</button>
@@ -68,26 +68,36 @@
       .then(data => {
         userId = data.userId;
         username = data.username;
-        document.getElementById('chat').style.display = 'block';
+        document.getElementById('receiverDiv').style.display = 'block';
+
+        const receiverSelect = document.getElementById('receiverSelect');
+        receiverSelect.innerHTML = ''; // Clear existing options
+
+        // Add the logged-in user as an option and select them by default
+        const option = document.createElement('option');
+        option.value = userId;
+        option.textContent = username;
+        receiverSelect.appendChild(option);
 
         fetch('/users')
         .then(response => response.json())
         .then(usersData => {
-          const receiverSelect = document.getElementById('receiverSelect');
           usersData.forEach(user => {
-            users[user.id] = user.username;
-            const option = document.createElement('option');
-            option.value = user.id;
-            option.textContent = user.username;
-            receiverSelect.appendChild(option);
+            if (user.id !== userId) { // Exclude the logged-in user from the list
+              users[user.id] = user.username;
+              const option = document.createElement('option');
+              option.value = user.id;
+              option.textContent = user.username;
+              receiverSelect.appendChild(option);
+            }
           });
 
-          // Fetch messages for the first user in the list
-          if (receiverSelect.options.length > 0) {
-            receiverSelect.selectedIndex = 0;
-            const firstReceiverId = receiverSelect.value;
-            fetchMessages(userId, firstReceiverId);
-          }
+          // Automatically select the logged-in user and fetch messages
+          receiverSelect.selectedIndex = 0;
+          const firstReceiverId = receiverSelect.value;
+          socket.emit('joinRoom', { senderId: userId, receiverId: firstReceiverId });
+          fetchMessages(userId, firstReceiverId);
+          document.getElementById('chat').style.display = 'block';
         });
       })
       .catch(error => console.error('Error:', error));
