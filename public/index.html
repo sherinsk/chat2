@@ -5,8 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat App</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    #chat { display: flex; }
+    #userList { width: 250px; }
+    #chatArea { flex-grow: 1; }
+  </style>
 </head>
 <body class="bg-gray-100">
+  <!-- Authentication Section -->
   <div id="auth" class="flex items-center justify-center min-h-screen bg-gray-100">
     <div class="w-full max-w-md p-8 bg-white rounded shadow-lg">
       <h2 class="mb-6 text-2xl font-bold text-center text-green-500">Register</h2>
@@ -22,22 +28,27 @@
     </div>
   </div>
 
-  <div id="receiverDiv" class="hidden">
-    <div class="flex items-center justify-between p-4 bg-green-500 text-white">
-      <select id="receiverSelect" class="p-2 text-black rounded"></select>
-      <button id="logoutButton" class="text-white bg-red-500 rounded px-4 py-2">Logout</button>
+  <!-- Chat Section -->
+  <div id="chat" class="hidden flex h-screen bg-gray-200">
+    <!-- User List Sidebar -->
+    <div id="userList" class="bg-white border-r border-gray-300 p-4">
+      <h2 class="text-xl font-bold text-green-500 mb-4">Users</h2>
+      <select id="receiverSelect" class="w-full p-2 border rounded text-black">
+        <!-- User options will be populated dynamically -->
+      </select>
+      <button id="logoutButton" class="mt-4 w-full p-2 text-white bg-red-500 rounded">Logout</button>
     </div>
-  </div>
 
-  <div id="chat" class="hidden h-screen bg-white flex flex-col">
-    <div class="p-4 bg-green-500 text-white flex justify-between items-center">
-      <h2 class="text-xl font-bold">Chat</h2>
-      <button id="logoutButton" class="text-white bg-red-500 rounded px-4 py-2">Logout</button>
-    </div>
-    <div id="messages" class="flex-grow p-4 overflow-y-auto"></div>
-    <div class="flex p-4 bg-gray-200">
-      <input id="messageInput" type="text" placeholder="Type a message" class="flex-grow p-2 border rounded">
-      <button id="sendButton" class="ml-2 p-2 text-white bg-green-500 rounded">Send</button>
+    <!-- Chat Area -->
+    <div id="chatArea" class="flex flex-col flex-grow">
+      <div class="p-4 bg-green-500 text-white flex justify-between items-center">
+        <h2 id="chatHeader" class="text-xl font-bold">Select a user to chat</h2>
+      </div>
+      <div id="messages" class="flex-grow p-4 overflow-y-auto bg-white"></div>
+      <div class="p-4 bg-gray-200">
+        <input id="messageInput" type="text" placeholder="Type a message" class="w-full p-2 border rounded">
+        <button id="sendButton" class="mt-2 p-2 text-white bg-green-500 rounded">Send</button>
+      </div>
     </div>
   </div>
 
@@ -112,7 +123,6 @@
 
     function initializeUser() {
       document.getElementById('auth').classList.add('hidden');
-      document.getElementById('receiverDiv').classList.remove('hidden');
       document.getElementById('chat').classList.remove('hidden');
       const receiverSelect = document.getElementById('receiverSelect');
       receiverSelect.innerHTML = ''; // Clear existing options
@@ -137,6 +147,7 @@
         if (receiverSelect.options.length > 0) {
           receiverSelect.selectedIndex = 0;
           const firstReceiverId = receiverSelect.value;
+          document.getElementById('chatHeader').textContent = `Chat with ${users[firstReceiverId]}`;
           socket.emit('joinRoom', { token, receiverId: firstReceiverId });
           fetchMessages(userId, firstReceiverId);
         }
