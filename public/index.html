@@ -4,31 +4,41 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat App</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-  <div id="auth">
-    <h2>Register</h2>
-    <input id="registerEmail" type="email" placeholder="Email">
-    <input id="registerPassword" type="password" placeholder="Password">
-    <input id="registerUsername" type="text" placeholder="Username">
-    <button id="registerButton">Register</button>
+<body class="bg-gray-100">
+  <div id="auth" class="flex items-center justify-center min-h-screen bg-gray-100">
+    <div class="w-full max-w-md p-8 bg-white rounded shadow-lg">
+      <h2 class="mb-6 text-2xl font-bold text-center text-green-500">Register</h2>
+      <input id="registerEmail" type="email" placeholder="Email" class="w-full p-2 mb-4 border rounded">
+      <input id="registerPassword" type="password" placeholder="Password" class="w-full p-2 mb-4 border rounded">
+      <input id="registerUsername" type="text" placeholder="Username" class="w-full p-2 mb-4 border rounded">
+      <button id="registerButton" class="w-full p-2 mb-6 text-white bg-green-500 rounded">Register</button>
 
-    <h2>Login</h2>
-    <input id="loginEmail" type="email" placeholder="Email">
-    <input id="loginPassword" type="password" placeholder="Password">
-    <button id="loginButton">Login</button>
+      <h2 class="mb-6 text-2xl font-bold text-center text-green-500">Login</h2>
+      <input id="loginEmail" type="email" placeholder="Email" class="w-full p-2 mb-4 border rounded">
+      <input id="loginPassword" type="password" placeholder="Password" class="w-full p-2 mb-4 border rounded">
+      <button id="loginButton" class="w-full p-2 text-white bg-green-500 rounded">Login</button>
+    </div>
   </div>
 
-  <div id="receiverDiv" style="display: none;">
-    <select id="receiverSelect"></select>
-    <button id="logoutButton">Logout</button>
+  <div id="receiverDiv" class="hidden">
+    <div class="flex items-center justify-between p-4 bg-green-500 text-white">
+      <select id="receiverSelect" class="p-2 text-black rounded"></select>
+      <button id="logoutButton" class="text-white bg-red-500 rounded px-4 py-2">Logout</button>
+    </div>
   </div>
 
-  <div id="chat" style="display: none;">
-    <h2>Chat</h2>
-    <div id="messages"></div>
-    <input id="messageInput" type="text" placeholder="Type a message">
-    <button id="sendButton">Send</button>
+  <div id="chat" class="hidden h-screen bg-white flex flex-col">
+    <div class="p-4 bg-green-500 text-white flex justify-between items-center">
+      <h2 class="text-xl font-bold">Chat</h2>
+      <button id="logoutButton" class="text-white bg-red-500 rounded px-4 py-2">Logout</button>
+    </div>
+    <div id="messages" class="flex-grow p-4 overflow-y-auto"></div>
+    <div class="flex p-4 bg-gray-200">
+      <input id="messageInput" type="text" placeholder="Type a message" class="flex-grow p-2 border rounded">
+      <button id="sendButton" class="ml-2 p-2 text-white bg-green-500 rounded">Send</button>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -101,8 +111,9 @@
     });
 
     function initializeUser() {
-      document.getElementById('auth').style.display = 'none';
-      document.getElementById('receiverDiv').style.display = 'block';
+      document.getElementById('auth').classList.add('hidden');
+      document.getElementById('receiverDiv').classList.remove('hidden');
+      document.getElementById('chat').classList.remove('hidden');
       const receiverSelect = document.getElementById('receiverSelect');
       receiverSelect.innerHTML = ''; // Clear existing options
 
@@ -128,7 +139,6 @@
           const firstReceiverId = receiverSelect.value;
           socket.emit('joinRoom', { token, receiverId: firstReceiverId });
           fetchMessages(userId, firstReceiverId);
-          document.getElementById('chat').style.display = 'block';
         }
       });
     }
@@ -151,8 +161,9 @@
     function displayMessage(message) {
       const messagesDiv = document.getElementById('messages');
       const messageElement = document.createElement('div');
-      const senderName = message.senderId === userId ? 'you' : (users[message.senderId] || 'Unknown');
-      const receiverName = users[message.receiverId] || 'Unknown';
+      const senderName = message.senderId === userId ? 'You' : (users[message.senderId] || 'Unknown');
+      const messageClass = message.senderId === userId ? 'bg-green-500 text-white' : 'bg-gray-300 text-black';
+      messageElement.classList.add('p-2', 'my-2', 'rounded', messageClass);
       messageElement.textContent = `${senderName}: ${message.content}`;
       messagesDiv.appendChild(messageElement);
     }
