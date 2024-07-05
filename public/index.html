@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -112,6 +112,7 @@
     });
 
     socket.on('message', (message) => {
+      console.log('Received message:', message); // Debugging line
       displayMessage(message);
     });
 
@@ -160,6 +161,7 @@
       })
       .then(response => response.json())
       .then(messages => {
+        console.log('Fetched messages:', messages); // Debugging line
         const messagesDiv = document.getElementById('messages');
         messagesDiv.innerHTML = ''; // Clear current messages
         messages.forEach(message => {
@@ -170,6 +172,7 @@
     }
 
     function displayMessage(message) {
+      console.log('Displaying message:', message); // Debugging line
       const messagesDiv = document.getElementById('messages');
       const messageElement = document.createElement('div');
       const senderName = message.senderId === userId ? 'You' : (users[message.senderId] || 'Unknown');
